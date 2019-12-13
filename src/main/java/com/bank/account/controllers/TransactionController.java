@@ -14,12 +14,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.bank.account.beans.TransactionBean;
-import com.bank.account.commun.Constants;
+import com.bank.account.common.Constants;
 import com.bank.account.dtos.TransactionDTO;
-import com.bank.account.exceptions.ServiceValidationException;
 import com.bank.account.services.TransactionService;
 
 import io.swagger.annotations.Api;
@@ -44,12 +42,7 @@ public class TransactionController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public TransactionDTO createTransaction(@PathVariable(name = "idAccount") Long idAccount, @RequestBody TransactionBean transactionBean) {
 		LOGGER.info(Constants.START_CREATION_TRANSACTION, idAccount);
-		TransactionDTO transactionDTO;
-		try {
-			transactionDTO = transactionService.createTransaction(idAccount, transactionBean);
-		} catch (ServiceValidationException e) {
-			throw new ResponseStatusException(e.getStatus(), e.getMessage(), e);
-		}
+		final TransactionDTO transactionDTO = transactionService.createTransaction(idAccount, transactionBean);
 		LOGGER.info(Constants.END_CREATION_TRANSACTION);
 		return transactionDTO;
 	}
@@ -61,7 +54,7 @@ public class TransactionController {
 	@ResponseStatus(HttpStatus.OK)
 	public List<TransactionDTO> getBankAccountTransactionHistory(@PathVariable(name = "idAccount") Long idAccount) {
 		LOGGER.info(Constants.START_GET_BANK_ACCOUNT_TRANSACTION_HISTORY, idAccount);
-		List<TransactionDTO> transactionDTOs = transactionService.getBankAccountTransactionHistory(idAccount);
+		final List<TransactionDTO> transactionDTOs = transactionService.getBankAccountTransactionHistory(idAccount);
 		LOGGER.info(Constants.END_GET_BANK_ACCOUNT_TRANSACTION_HISTORY);
 		return transactionDTOs;
 	}

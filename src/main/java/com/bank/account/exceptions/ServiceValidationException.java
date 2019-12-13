@@ -8,7 +8,7 @@ public class ServiceValidationException extends Exception {
 	 * 
 	 */
 	private static final long serialVersionUID = -2437944350826386204L;
-	
+
 	/**
 	 * 
 	 */

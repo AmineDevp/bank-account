@@ -69,57 +69,63 @@ public class TransactionControllerTest {
 	@Before
 	public void init() {
 
-		final Bank bank = new Bank.Builder().withBankCode(30003)
-				.withBankName("SOCIETE GENERALE")
-				.withBankIdentifierCode("SOGEFRPP")
-				.withAddress("29 BD HAUSSMANN")
-				.withZipCode("75009")
-				.withCity("PARIS")
-				.withCountry(Country.FRANCE)
+		final Bank bank = Bank.builder()
+				.bankCode(30003)
+				.bankName("SOCIETE GENERALE")
+				.bankIdentifierCode("SOGEFRPP")
+				.address("29 BD HAUSSMANN")
+				.zipCode("75009")
+				.city("PARIS")
+				.country(Country.FRANCE)
 				.build();
 
-		final WicketBank wicketBank = new WicketBank.Builder().withIdWicketBank(1L)
-				.withWicketCode(3360)
-				.withWicketName("PARIS MESSINE")
-				.withAddress("113 BD HAUSSMANN")
-				.withZipCode("75008")
-				.withCity("PARIS")
-				.withCountry(Country.FRANCE)
-				.withBank(bank)
+		final WicketBank wicketBank = WicketBank.builder()
+				.idWicketBank(1L)
+				.wicketCode(3360)
+				.wicketName("PARIS MESSINE")
+				.address("113 BD HAUSSMANN")
+				.zipCode("75008")
+				.city("PARIS")
+				.country(Country.FRANCE)
+				.bank(bank)
 				.build();
 
-		final Client firstClient = new Client.Builder().withIdClient(1L)
-				.withFirstname("AMINE")
-				.withLastname("AMARIR")
-				.withEmailAddress("AMINE.AMARIR@GMAIL.COM")
-				.withAddress("52 RUE DE NEUILLY")
-				.withZipCode("92110")
-				.withCity("CLICHY")
-				.withCountry(Country.FRANCE)
+		final Client firstClient = Client.builder()
+				.idClient(1L)
+				.firstname("AMINE")
+				.lastname("AMARIR")
+				.emailAddress("AMINE.AMARIR@GMAIL.COM")
+				.address("52 RUE DE NEUILLY")
+				.zipCode("92110")
+				.city("CLICHY")
+				.country(Country.FRANCE)
 				.build();
 
-		final Client secondClient = new Client.Builder().withIdClient(2L)
-				.withFirstname("HIBAT ALLAH")
-				.withLastname("AMARIR")
-				.withEmailAddress("HIBAT.AMARIR@GMAIL.COM")
-				.withAddress("52 RUE DE NEUILLY")
-				.withZipCode("92110")
-				.withCity("CLICHY")
-				.withCountry(Country.FRANCE)
+		final Client secondClient = Client.builder()
+				.idClient(2L)
+				.firstname("HIBAT ALLAH")
+				.lastname("AMARIR")
+				.emailAddress("HIBAT.AMARIR@GMAIL.COM")
+				.address("52 RUE DE NEUILLY")
+				.zipCode("92110")
+				.city("CLICHY")
+				.country(Country.FRANCE)
 				.build();
 
-		firstAccount = new Account.Builder().withIdAccount(1L)
-				.withAccountNumber(50553980L)
-				.withAmount(1000.0)
-				.withWicketBank(wicketBank)
-				.withClient(firstClient)
+		firstAccount = Account.builder()
+				.idAccount(1L)
+				.accountNumber(50553980L)
+				.amount(1000.0)
+				.wicketBank(wicketBank)
+				.client(firstClient)
 				.build();
 
-		secondAccount = new Account.Builder().withIdAccount(2L)
-				.withAccountNumber(50553981L)
-				.withAmount(1000.0)
-				.withWicketBank(wicketBank)
-				.withClient(secondClient)
+		secondAccount = Account.builder()
+				.idAccount(2L)
+				.accountNumber(50553981L)
+				.amount(1000.0)
+				.wicketBank(wicketBank)
+				.client(secondClient)
 				.build();
 
 		when(accountRepository.findById(1L)).thenReturn(Optional.of(firstAccount));
@@ -140,21 +146,23 @@ public class TransactionControllerTest {
 		transactionBean.setSenderAccountId(1L);
 		transactionBean.setReveiverAccountId(null);
 
-		final Account firstAccountAmountUpdated = new Account.Builder().build();
+		final Account firstAccountAmountUpdated = Account.builder()
+				.build();
 		BeanUtils.copyProperties(firstAccount, firstAccountAmountUpdated);
 		firstAccountAmountUpdated.setLastUpdate(transactionBean.getDate());
 		firstAccountAmountUpdated.setAmount(firstAccount.getAmount() - 100.0);
 
 		when(accountRepository.save(firstAccountAmountUpdated)).thenReturn(firstAccountAmountUpdated);
 
-		final Transaction transaction = new Transaction.Builder().withIdTransaction(1L)
-				.withTransactionType(transactionBean.getTransactionType())
-				.withAmount(transactionBean.getAmount())
-				.withMotif(transactionBean.getMotif())
-				.withDate(transactionBean.getDate())
-				.withCurrency(transactionBean.getCurrency())
-				.withSenderAccount(firstAccountAmountUpdated)
-				.withReveiverAccount(null)
+		final Transaction transaction = Transaction.builder()
+				.idTransaction(1L)
+				.transactionType(transactionBean.getTransactionType())
+				.amount(transactionBean.getAmount())
+				.motif(transactionBean.getMotif())
+				.date(transactionBean.getDate())
+				.currency(transactionBean.getCurrency())
+				.senderAccount(firstAccountAmountUpdated)
+				.reveiverAccount(null)
 				.build();
 
 		when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
@@ -218,21 +226,23 @@ public class TransactionControllerTest {
 		transactionBean.setSenderAccountId(null);
 		transactionBean.setReveiverAccountId(1L);
 
-		final Account firstAccountAmountUpdated = new Account.Builder().build();
+		final Account firstAccountAmountUpdated = Account.builder()
+				.build();
 		BeanUtils.copyProperties(firstAccount, firstAccountAmountUpdated);
 		firstAccountAmountUpdated.setLastUpdate(transactionBean.getDate());
 		firstAccountAmountUpdated.setAmount(firstAccount.getAmount() + 100.0);
 
 		when(accountRepository.save(firstAccountAmountUpdated)).thenReturn(firstAccountAmountUpdated);
 
-		final Transaction transaction = new Transaction.Builder().withIdTransaction(1L)
-				.withTransactionType(transactionBean.getTransactionType())
-				.withAmount(transactionBean.getAmount())
-				.withMotif(transactionBean.getMotif())
-				.withDate(transactionBean.getDate())
-				.withCurrency(transactionBean.getCurrency())
-				.withSenderAccount(null)
-				.withReveiverAccount(firstAccountAmountUpdated)
+		final Transaction transaction = Transaction.builder()
+				.idTransaction(1L)
+				.transactionType(transactionBean.getTransactionType())
+				.amount(transactionBean.getAmount())
+				.motif(transactionBean.getMotif())
+				.date(transactionBean.getDate())
+				.currency(transactionBean.getCurrency())
+				.senderAccount(null)
+				.reveiverAccount(firstAccountAmountUpdated)
 				.build();
 
 		when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
@@ -296,28 +306,31 @@ public class TransactionControllerTest {
 		transactionBean.setSenderAccountId(1L);
 		transactionBean.setReveiverAccountId(2L);
 
-		final Account firstAccountAmountUpdated = new Account.Builder().build();
+		final Account firstAccountAmountUpdated = Account.builder()
+				.build();
 		BeanUtils.copyProperties(firstAccount, firstAccountAmountUpdated);
 		firstAccountAmountUpdated.setLastUpdate(transactionBean.getDate());
 		firstAccountAmountUpdated.setAmount(firstAccount.getAmount() - 100.0);
 
 		when(accountRepository.save(firstAccountAmountUpdated)).thenReturn(firstAccountAmountUpdated);
 
-		final Account secondAccountAmountUpdated = new Account.Builder().build();
+		final Account secondAccountAmountUpdated = Account.builder()
+				.build();
 		BeanUtils.copyProperties(secondAccount, secondAccountAmountUpdated);
 		secondAccountAmountUpdated.setLastUpdate(transactionBean.getDate());
 		secondAccountAmountUpdated.setAmount(secondAccount.getAmount() + 100.0);
 
 		when(accountRepository.save(secondAccountAmountUpdated)).thenReturn(secondAccountAmountUpdated);
 
-		final Transaction transaction = new Transaction.Builder().withIdTransaction(1L)
-				.withTransactionType(transactionBean.getTransactionType())
-				.withAmount(transactionBean.getAmount())
-				.withMotif(transactionBean.getMotif())
-				.withDate(transactionBean.getDate())
-				.withCurrency(transactionBean.getCurrency())
-				.withSenderAccount(firstAccountAmountUpdated)
-				.withReveiverAccount(secondAccountAmountUpdated)
+		final Transaction transaction = Transaction.builder()
+				.idTransaction(1L)
+				.transactionType(transactionBean.getTransactionType())
+				.amount(transactionBean.getAmount())
+				.motif(transactionBean.getMotif())
+				.date(transactionBean.getDate())
+				.currency(transactionBean.getCurrency())
+				.senderAccount(firstAccountAmountUpdated)
+				.reveiverAccount(secondAccountAmountUpdated)
 				.build();
 
 		when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
@@ -374,32 +387,35 @@ public class TransactionControllerTest {
 	@Test
 	public void testGetBankAccountTransactionHistory() throws Exception {
 
-		List<Transaction> transactions = Arrays.asList(new Transaction.Builder().withIdTransaction(1L)
-				.withTransactionType(TransactionType.TRANSFER_OPERATION)
-				.withAmount(1000.0)
-				.withMotif(null)
-				.withDate(new Date())
-				.withCurrency(Currency.getInstance(Locale.getDefault()))
-				.withSenderAccount(firstAccount)
-				.withReveiverAccount(secondAccount)
+		List<Transaction> transactions = Arrays.asList(Transaction.builder()
+				.idTransaction(1L)
+				.transactionType(TransactionType.TRANSFER_OPERATION)
+				.amount(1000.0)
+				.motif(null)
+				.date(new Date())
+				.currency(Currency.getInstance(Locale.getDefault()))
+				.senderAccount(firstAccount)
+				.reveiverAccount(secondAccount)
 				.build(),
-				new Transaction.Builder().withIdTransaction(1L)
-						.withTransactionType(TransactionType.DEPOSIT_OPERATION)
-						.withAmount(100.0)
-						.withMotif(null)
-						.withDate(new Date())
-						.withCurrency(Currency.getInstance(Locale.getDefault()))
-						.withSenderAccount(null)
-						.withReveiverAccount(firstAccount)
+				Transaction.builder()
+						.idTransaction(1L)
+						.transactionType(TransactionType.DEPOSIT_OPERATION)
+						.amount(100.0)
+						.motif(null)
+						.date(new Date())
+						.currency(Currency.getInstance(Locale.getDefault()))
+						.senderAccount(null)
+						.reveiverAccount(firstAccount)
 						.build(),
-				new Transaction.Builder().withIdTransaction(1L)
-						.withTransactionType(TransactionType.WITHDRAWAL_OPERATION)
-						.withAmount(100.0)
-						.withMotif(null)
-						.withDate(new Date())
-						.withCurrency(Currency.getInstance(Locale.getDefault()))
-						.withSenderAccount(firstAccount)
-						.withReveiverAccount(null)
+				Transaction.builder()
+						.idTransaction(1L)
+						.transactionType(TransactionType.WITHDRAWAL_OPERATION)
+						.amount(100.0)
+						.motif(null)
+						.date(new Date())
+						.currency(Currency.getInstance(Locale.getDefault()))
+						.senderAccount(firstAccount)
+						.reveiverAccount(null)
 						.build());
 
 		when(transactionRepository.findAllByAccountId(1L)).thenReturn(transactions);

@@ -7,16 +7,15 @@ import javax.transaction.Transactional;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.bank.account.beans.TransactionBean;
-import com.bank.account.commun.Constants;
 import com.bank.account.dtos.TransactionDTO;
 import com.bank.account.entities.Account;
 import com.bank.account.entities.Transaction;
-import com.bank.account.enums.TransactionType;
-import com.bank.account.exceptions.ServiceValidationException;
+import com.bank.account.exceptions.AccountNotFoundException;
+import com.bank.account.exceptions.AmountNotAllowedException;
+import com.bank.account.exceptions.IncorrectParametersException;
 import com.bank.account.repositories.AccountRepository;
 import com.bank.account.repositories.TransactionRepository;
 import com.bank.account.services.TransactionService;
@@ -35,59 +34,23 @@ public class TransactionServiceImpl implements TransactionService {
 	private ModelMapper modelMapper;
 
 	@Override
-	public TransactionDTO createTransaction(Long idAccount, TransactionBean transactionBean) throws ServiceValidationException {
-		final Account account = accountRepository.findById(idAccount)
-				.orElseThrow(() -> new ServiceValidationException(Constants.ACCOUNT_NOT_FOUND, HttpStatus.NOT_FOUND));
+	public TransactionDTO createTransaction(Long idAccount, TransactionBean transactionBean) {
 		if (transactionBean.getAmount() < 0) {
-			throw new ServiceValidationException(Constants.AMOUNT_NOT_ALLOWED, HttpStatus.BAD_REQUEST);
+			throw new AmountNotAllowedException();
 		}
-		final Transaction.Builder transactionBuilder = new Transaction.Builder().withTransactionType(transactionBean.getTransactionType())
-				.withAmount(transactionBean.getAmount())
-				.withMotif(transactionBean.getMotif())
-				.withDate(transactionBean.getDate())
-				.withCurrency(transactionBean.getCurrency());
-		Transaction transaction;
-		if (TransactionType.TRANSFER_OPERATION.equals(transactionBean.getTransactionType())) {
-			if (idAccount != null && idAccount.equals(transactionBean.getSenderAccountId())) {
-				final Account receiverAccount = accountRepository.findById(transactionBean.getReveiverAccountId())
-						.orElseThrow(() -> new ServiceValidationException(Constants.ACCOUNT_NOT_FOUND, HttpStatus.NOT_FOUND));
-				if (isTransactionAllowed(account, -1 * transactionBean.getAmount())) {
-					account.setAmount(account.getAmount() - transactionBean.getAmount());
-					receiverAccount.setAmount(receiverAccount.getAmount() + transactionBean.getAmount());
-					transaction = transactionBuilder.withSenderAccount(account)
-							.withReveiverAccount(receiverAccount)
-							.build();
-					account.setLastUpdate(transactionBean.getDate());
-					receiverAccount.setLastUpdate(transactionBean.getDate());
-					accountRepository.save(account);
-					accountRepository.save(receiverAccount);
-					transaction = transactionRepository.save(transaction);
-				} else {
-					throw new ServiceValidationException(Constants.AMOUNT_NOT_ALLOWED, HttpStatus.BAD_REQUEST);
-				}
-			} else {
-				throw new ServiceValidationException(Constants.INCORRECT_PARAMETERS, HttpStatus.BAD_REQUEST);
-			}
-		} else if (TransactionType.WITHDRAWAL_OPERATION.equals(transactionBean.getTransactionType())) {
-			if (isTransactionAllowed(account, -1 * transactionBean.getAmount())) {
-				account.setAmount(account.getAmount() - transactionBean.getAmount());
-				transaction = transactionBuilder.withSenderAccount(account)
-						.build();
-				account.setLastUpdate(transactionBean.getDate());
-				accountRepository.save(account);
-				transaction = transactionRepository.save(transaction);
-			} else {
-				throw new ServiceValidationException(Constants.AMOUNT_NOT_ALLOWED, HttpStatus.BAD_REQUEST);
-			}
-		} else if (TransactionType.DEPOSIT_OPERATION.equals(transactionBean.getTransactionType())) {
-			account.setAmount(account.getAmount() + transactionBean.getAmount());
-			transaction = transactionBuilder.withReveiverAccount(account)
-					.build();
-			account.setLastUpdate(transactionBean.getDate());
-			accountRepository.save(account);
-			transaction = transactionRepository.save(transaction);
-		} else {
-			throw new ServiceValidationException(Constants.INCORRECT_PARAMETERS, HttpStatus.BAD_REQUEST);
+		final Transaction transaction;
+		switch (transactionBean.getTransactionType()) {
+		case TRANSFER_OPERATION:
+			transaction = this.processTransferOperation(idAccount, transactionBean);
+			break;
+		case WITHDRAWAL_OPERATION:
+			transaction = this.processWithdrawalOperation(idAccount, transactionBean);
+			break;
+		case DEPOSIT_OPERATION:
+			transaction = this.processDepositOperation(idAccount, transactionBean);
+			break;
+		default:
+			throw new IncorrectParametersException();
 		}
 		return modelMapper.map(transaction, TransactionDTO.class);
 	}
@@ -102,6 +65,78 @@ public class TransactionServiceImpl implements TransactionService {
 
 	private boolean isTransactionAllowed(Account account, Double amount) {
 		return amount != null && account.getAmount() + account.getOverDraft() + amount >= 0;
+	}
+
+	private Transaction processTransferOperation(Long idAccount, TransactionBean transactionBean) {
+		final Account account = accountRepository.findById(idAccount)
+				.orElseThrow(AccountNotFoundException::new);
+
+		if (idAccount != null && idAccount.equals(transactionBean.getSenderAccountId())) {
+			final Account receiverAccount = accountRepository.findById(transactionBean.getReveiverAccountId())
+					.orElseThrow(AccountNotFoundException::new);
+
+			if (isTransactionAllowed(account, -1 * transactionBean.getAmount())) {
+				account.setAmount(account.getAmount() - transactionBean.getAmount());
+				receiverAccount.setAmount(receiverAccount.getAmount() + transactionBean.getAmount());
+				final Transaction transaction = Transaction.builder()
+						.transactionType(transactionBean.getTransactionType())
+						.amount(transactionBean.getAmount())
+						.motif(transactionBean.getMotif())
+						.date(transactionBean.getDate())
+						.currency(transactionBean.getCurrency())
+						.senderAccount(account)
+						.reveiverAccount(receiverAccount)
+						.build();
+				account.setLastUpdate(transactionBean.getDate());
+				receiverAccount.setLastUpdate(transactionBean.getDate());
+				accountRepository.save(account);
+				accountRepository.save(receiverAccount);
+				return transactionRepository.save(transaction);
+			} else {
+				throw new AmountNotAllowedException();
+			}
+		} else {
+			throw new IncorrectParametersException();
+		}
+	}
+
+	private Transaction processWithdrawalOperation(Long idAccount, TransactionBean transactionBean) {
+		final Account account = accountRepository.findById(idAccount)
+				.orElseThrow(AccountNotFoundException::new);
+		if (isTransactionAllowed(account, -1 * transactionBean.getAmount())) {
+			account.setAmount(account.getAmount() - transactionBean.getAmount());
+			final Transaction transaction = Transaction.builder()
+					.transactionType(transactionBean.getTransactionType())
+					.amount(transactionBean.getAmount())
+					.motif(transactionBean.getMotif())
+					.date(transactionBean.getDate())
+					.currency(transactionBean.getCurrency())
+					.senderAccount(account)
+					.build();
+			account.setLastUpdate(transactionBean.getDate());
+			accountRepository.save(account);
+			return transactionRepository.save(transaction);
+		} else {
+			throw new AmountNotAllowedException();
+		}
+	}
+
+	private Transaction processDepositOperation(Long idAccount, TransactionBean transactionBean) {
+		final Account account = accountRepository.findById(idAccount)
+				.orElseThrow(AccountNotFoundException::new);
+		account.setAmount(account.getAmount() + transactionBean.getAmount());
+		final Transaction transaction = Transaction.builder()
+				.transactionType(transactionBean.getTransactionType())
+				.amount(transactionBean.getAmount())
+				.motif(transactionBean.getMotif())
+				.date(transactionBean.getDate())
+				.currency(transactionBean.getCurrency())
+				.reveiverAccount(account)
+				.build();
+		account.setLastUpdate(transactionBean.getDate());
+		accountRepository.save(account);
+		return transactionRepository.save(transaction);
+
 	}
 
 }
